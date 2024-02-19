@@ -8,16 +8,16 @@ WORKDIR /app
 COPY . .
 
 # Build the Go application
-RUN go build -o webapp .
+RUN go build -o /app/header-inspection ./cmd
 
 # Use a lightweight Alpine base image to create the final image
 FROM alpine
 
 # Copy the built executable from the previous stage
-COPY --from=builder /app/webapp /app/webapp
+COPY --from=builder /app/header-inspection /app/header-inspection
 
 # Expose port 8080 to the outside world
 EXPOSE 8080
 
 # Command to run the Go web application
-CMD ["/app/webapp"]
+CMD ["/app/header-inspection"]
