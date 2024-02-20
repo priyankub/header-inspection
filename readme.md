@@ -75,7 +75,3 @@ This project has no external dependencies beyond the standard library included w
 ## Contributing
 
 Contributions are welcome! Feel free to open issues or submit pull requests for any improvements or new features you'd like to see.
-
-## License
-
-MIT License
