@@ -1,75 +1,38 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-	"net/http/httputil"
-	"strings"
+    "fmt"
+    "log"
+    "net/http"
 )
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	url := r.FormValue("url")
-	if url == "" {
-		http.Error(w, "URL parameter is required", http.StatusBadRequest)
-		return
-	}
+func headersHandler(w http.ResponseWriter, r *http.Request) {
+    // Log the incoming request method and URL
+    log.Printf("Received request: %s %s", r.Method, r.URL.Path)
 
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		http.Error(w, "Error creating request: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+    // Analyze and extract HTTP headers
+    headers := make(map[string][]string)
+    for key, value := range r.Header {
+        headers[key] = value
+    }
 
-	client := &http.Client{}
-	resp, err := client.Do(request)
-	if err != nil {
-		http.Error(w, "Error sending request: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
+    // Log the headers
+    log.Printf("Request headers: %v", headers)
 
-	// Dump request and response details
-	requestDump, err := httputil.DumpRequestOut(request, true)
-	if err != nil {
-		http.Error(w, "Error dumping request: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	responseDump, err := httputil.DumpResponse(resp, true)
-	if err != nil {
-		http.Error(w, "Error dumping response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Extract IP and headers from Via header
-	viaHeader := resp.Header.Get("Via")
-	viaEntries := strings.Split(viaHeader, ", ")
-	ipAndHeaders := make([][]string, len(viaEntries))
-	for i, entry := range viaEntries {
-		ipAndHeaders[i] = strings.SplitN(entry, " ", 2)
-	}
-
-	// Display request and response details along with IP and headers in a table
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprintln(w, "<html><head><title>Proxy Hops</title></head><body>")
-	fmt.Fprintln(w, "<h2>Proxy Hops:</h2>")
-	fmt.Fprintln(w, "<table border=\"1\"><tr><th>IP</th><th>Headers Added</th></tr>")
-	for _, entry := range ipAndHeaders {
-		fmt.Fprintf(w, "<tr><td>%s</td><td>%s</td></tr>\n", entry[0], entry[1])
-	}
-	fmt.Fprintln(w, "</table>")
-	fmt.Fprintln(w, "<h2>Request:</h2>")
-	fmt.Fprintln(w, "<pre>")
-	fmt.Fprintln(w, string(requestDump))
-	fmt.Fprintln(w, "</pre>")
-	fmt.Fprintln(w, "<h2>Response:</h2>")
-	fmt.Fprintln(w, "<pre>")
-	fmt.Fprintln(w, string(responseDump))
-	fmt.Fprintln(w, "</pre>")
-	fmt.Fprintln(w, "</body></html>")
+    // Respond with the analyzed headers
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    fmt.Fprintf(w, `{"headers": %v}`, headers)
 }
 
 func main() {
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
+    // Define a handler for the main URL
+    http.HandleFunc("/", headersHandler)
+
+    // Start the HTTP server
+    port := ":8080" // Port to listen on
+    log.Printf("Server is listening on port %s...\n", port)
+    if err := http.ListenAndServe(port, nil); err != nil {
+        log.Fatalf("Failed to start server: %v", err)
+    }
 }
