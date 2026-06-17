@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM golang:1.22-alpine AS builder
+FROM golang:1.26-alpine AS builder
 WORKDIR /app
 COPY . .
 # CGO_ENABLED=0 ensures static linking. -ldflags="-w -s" strips debug info to shrink binary size.
