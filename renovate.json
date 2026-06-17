@@ -3,12 +3,15 @@
   "extends": [
     "config:recommended"
   ],
-  "golang": {
-    "postUpdateOptions": [
-      "gomodTidy"
-    ]
-  },
   "packageRules": [
+    {
+      "matchCategories": [
+        "golang"
+      ],
+      "postUpdateOptions": [
+        "gomodTidy"
+      ]
+    },
     {
       "matchManagers": ["gomod"],
       "matchUpdateTypes": ["minor", "patch"],
