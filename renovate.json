@@ -3,6 +3,7 @@
   "extends": [
     "config:recommended"
   ],
+  "platformAutomerge": true,
   "packageRules": [
     {
       "matchCategories": [
@@ -13,12 +14,7 @@
       ]
     },
     {
-      "matchManagers": ["gomod"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "automerge": true
-    },
-    {
-      "matchManagers": ["dockerfile", "github-actions"],
+      "matchManagers": ["gomod", "dockerfile", "github-actions"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true
     }
