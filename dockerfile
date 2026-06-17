@@ -1,23 +1,19 @@
-# Use the official Go image as the base image
-FROM golang:alpine AS builder
-
-# Set the working directory inside the container
+# Stage 1: Build
+FROM golang:1.22-alpine AS builder
 WORKDIR /app
-
-# Copy the Go application source code into the container
 COPY . .
+# CGO_ENABLED=0 ensures static linking. -ldflags="-w -s" strips debug info to shrink binary size.
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/header-inspection ./cmd
 
-# Build the Go application
-RUN go build -o /app/header-inspection ./cmd
+# Stage 2: Final minimal image
+# Distroless is smaller than Alpine and contains no shell, reducing attack surface
+FROM gcr.io/distroless/static-debian12:nonroot
 
-# Use a lightweight Alpine base image to create the final image
-FROM alpine
-
-# Copy the built executable from the previous stage
+# Copy the static binary
 COPY --from=builder /app/header-inspection /app/header-inspection
 
-# Expose port 8080 to the outside world
 EXPOSE 8080
+# Run as the built-in nonroot user for better security
+USER nonroot:nonroot
 
-# Command to run the Go web application
 CMD ["/app/header-inspection"]

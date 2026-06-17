@@ -1,22 +1,72 @@
-name: Deploy to GitHub Container Registry
+name: Build and Deploy
 
 on:
   push:
     branches:
       - main
+  pull_request: # Runs tests on PRs, but skips deployment
 
 jobs:
-  build-and-deploy:
+  test:
+    name: Test and Lint
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Run go vet
+        run: go vet ./...
+
+      # Uncomment if you add tests in the future
+      # - name: Run tests
+      #   run: go test -v ./...
+
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: test # Waits for the test job to pass
+    runs-on: ubuntu-latest
+    # Only push the image if we are on the main branch (e.g., merging a PR)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write # Required to push to GHCR
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/header-inspection
+          tags: |
+            type=raw,value=latest
+            type=sha
 
       - name: Build and push Docker image
-        run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/header-inspection:latest .
-          docker push ghcr.io/${{ github.repository_owner }}/header-inspection:latest
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Utilizes GitHub Actions cache to speed up Docker builds natively
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
