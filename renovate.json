@@ -4,6 +4,8 @@
     "config:recommended"
   ],
   "platformAutomerge": true,
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
   "packageRules": [
     {
       "matchCategories": [
@@ -17,6 +19,12 @@
       "matchManagers": ["gomod", "dockerfile", "github-actions"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true
+    },
+    {
+      "matchPackageNames": ["*"],
+      "groupName": "All Homelab Dependencies",
+      "groupSlug": "all-homelab-deps",
+      "description": "Squash all incoming updates into a single branch to eliminate separate commit noise."
     }
   ]
 }
